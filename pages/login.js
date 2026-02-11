@@ -23,11 +23,19 @@ function LoginPage() {
     }
   }, [session, status, router]);
 
-  // Check URL params for success message
+  // Check URL params for success message atau redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // Alert jika dari register
     if (urlParams.get("success") === "registered") {
       alert("Registration successful! Please login.");
+    }
+    
+    // Check jika ada redirect dari forbidden/unauthorized
+    const from = urlParams.get("from");
+    if (from) {
+      console.log("Redirected from:", from);
     }
   }, []);
 
@@ -36,28 +44,41 @@ function LoginPage() {
     setIsLoading(true);
     setError("");
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (res?.ok) {
-      // Get session and redirect
-      const session = await getSession();
-      const userRole = session?.user?.role;
+      if (res?.ok) {
+        // Get session dan redirect
+        const session = await getSession();
+        const userRole = session?.user?.role;
 
-      if (userRole === 'admin') {
-        router.push("/dashboard/admin");
-      } else if (userRole === 'user') {
-        router.push("/dashboard/user");
+        if (userRole === 'admin') {
+          router.push("/dashboard/admin");
+        } else if (userRole === 'user') {
+          router.push("/dashboard/user");
+        } else {
+          setError("Invalid role");
+        }
+      } else if (res?.error) {
+        // Handle specific NextAuth errors
+        if (res.error === "CredentialsSignin") {
+          setError("Invalid email or password");
+        } else {
+          setError("Login failed. Please try again.");
+        }
       } else {
-        setError("Invalid role");
+        setError("Login failed. Please check your credentials.");
       }
-    } else {
-      setError("Login failed. Please check your credentials.");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.message || "An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }
 
   return (
@@ -85,6 +106,7 @@ function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isLoading}
+              autoComplete="email"
             />
           </div>
 
@@ -100,6 +122,7 @@ function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isLoading}
+              autoComplete="current-password"
             />
           </div>
 

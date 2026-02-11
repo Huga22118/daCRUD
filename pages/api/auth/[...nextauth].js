@@ -1,3 +1,4 @@
+// pages/api/auth/[...nextauth].js
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "../../../lib/prisma";
@@ -45,26 +46,27 @@ export default NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
         token.role = user.role;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
-        session.user.role = token.role;
+      // ✅ PASTIKAN session.user ADA sebelum assign
+      if (!session.user) {
+        session.user = {};
       }
+      
+      session.user.id = token.id;
+      session.user.email = token.email;
+      session.user.name = token.name;
+      session.user.role = token.role;
+      
       return session;
-    },
-    // ✅ Tambahkan callback ini untuk handle unauthorized
-    async redirect({ url, baseUrl }) {
-      // Biarkan redirect ke URL yang diminta
-      return url.startsWith(baseUrl) ? url : baseUrl;
     }
   },
-  // ❌ HAPUS baris ini:
-  // pages: {
-  //   signIn: "/login"
-  // },
-  secret: process.env.NEXTAUTH_SECRET
+  secret: process.env.NEXTAUTH_SECRET,
+  // ✅ Enable debug untuk development
+  debug: process.env.NODE_ENV === "development",
 });
