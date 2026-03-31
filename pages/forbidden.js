@@ -1,16 +1,25 @@
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 
 export default function Forbidden() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  const redirectTarget = useMemo(() => {
+    if (session?.user?.role === "admin") return "/dashboard/admin";
+    if (session?.user?.role === "user") return "/dashboard/user";
+    return "/login";
+  }, [session]);
 
   // Auto redirect ke dashboard user setelah 3 detik
   useEffect(() => {
+    if (status === "loading") return undefined;
     const timer = setTimeout(() => {
-      router.push("/dashboard/user");
+      router.push(redirectTarget);
     }, 3000);
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [redirectTarget, router, status]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
@@ -41,7 +50,7 @@ export default function Forbidden() {
 
         <div className="space-y-4">
           <button
-            onClick={() => router.push("/dashboard/user")}
+            onClick={() => router.push(redirectTarget)}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
           >
             Kembali ke Dashboard

@@ -79,7 +79,10 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center">
-            <Link href="/dashboard/user" className="text-xl font-bold text-blue-600">
+            <Link
+              href={session?.user?.role === "admin" ? "/dashboard/admin" : "/dashboard/user"}
+              className="text-xl font-bold text-blue-600"
+            >
               MyApp
             </Link>
           </div>
